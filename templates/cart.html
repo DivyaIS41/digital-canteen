@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Shopping Cart{% endblock %}
+
+{% block content %}
+<h1 class="mb-5 text-center text-dark fw-bold">Your Order Cart</h1>
+
+{% if cart %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg mb-4">
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for item in cart %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div class="me-3">
+                            <h5 class="mb-1 fw-bold">{{ item.item_name }} 
+                                {% if item.is_special %}
+                                    <span class="badge bg-danger ms-2">SPECIAL</span>
+                                {% endif %}
+                            </h5>
+                            <span class="text-muted small">Unit Price: ₹{{ "%.2f"|format(item.price) }}</span>
+                        </div>
+                        
+                        <div class="text-end d-flex align-items-center">
+                            
+                            <!-- QUANTITY UPDATE FORM -->
+                            <form action="{{ url_for('update_cart', item_id=item.item_id) }}" method="POST" class="d-flex me-4">
+                                <label class="me-2 small d-none d-sm-block">Qty:</label>
+                                <input type="number" name="quantity" class="form-control form-control-sm text-center" value="{{ item.quantity }}" min="1" style="width: 70px;" required>
+                                <button type="submit" class="btn btn-sm btn-outline-info ms-2" title="Update Quantity">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </form>
+                            
+                            <!-- LINE TOTAL -->
+                            <div class="fw-bold fs-5 me-4 text-primary" style="min-width: 80px;">
+                                ₹{{ "%.2f"|format(item.line_total) }}
+                            </div>
+                            
+                            <!-- REMOVE BUTTON (Bug Fix) -->
+                            <form action="{{ url_for('remove_from_cart', item_id=item.item_id) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove {{ item.item_name }}?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Item">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="card shadow-lg bg-white p-4 border-success">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0 text-dark fw-bold">Grand Total:</h4>
+                <h4 class="mb-0 text-success fw-bold display-6">₹{{ "%.2f"|format(order_total) }}</h4>
+            </div>
+            
+            <a href="{{ url_for('checkout') }}" class="btn btn-lg btn-primary w-100">
+                <i class="fas fa-money-check-alt me-2"></i> Proceed to Checkout
+            </a>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary w-100 mt-2">
+                <i class="fas fa-plus-circle me-2"></i> Continue Ordering
+            </a>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info text-center py-4 shadow-sm">
+    <h4 class="alert-heading fw-bold">Your cart is empty!</h4>
+    <p>Head back to the menu to start your order.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary mt-2"><i class="fas fa-list-alt me-2"></i> View Menu</a>
+</div>
+{% endif %}
+{% endblock %}

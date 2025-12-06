@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}My Orders{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <h1 class="display-6 fw-bold text-dark"><i class="fas fa-history text-primary me-2"></i> My Recent Orders</h1>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-lg">
+                <i class="fas fa-arrow-left me-2"></i> Back to Menu
+            </a>
+        </div>
+
+        {% if orders %}
+            {% for order in orders %}
+            <div class="card shadow-lg mb-5 border-0 rounded-xl">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center p-4 rounded-top-xl">
+                    <h5 class="mb-0 fw-bold">Order Reference: #{{ order.order_id }}</h5>
+                    {% set status_class = {'Pending': 'bg-warning', 'Completed': 'bg-success', 'Cancelled': 'bg-danger'} %}
+                    <span class="badge {{ status_class.get(order.status, 'bg-secondary') }} p-2 fs-6 shadow-sm">{{ order.status }}</span>
+                </div>
+                
+                <div class="card-body p-4">
+                    <div class="row mb-3 border-bottom pb-3">
+                        <div class="col-md-4 mb-2 mb-md-0">
+                            <p class="text-muted mb-0 small fw-bold">Date & Time</p>
+                            <p class="mb-0 fw-bold text-dark">{{ order.order_date }} at {{ order.order_time }}</p>
+                        </div>
+                        <div class="col-md-4 mb-2 mb-md-0">
+                            <p class="text-muted mb-0 small fw-bold">Payment Mode</p>
+                            <p class="mb-0 fw-bold text-dark">{{ order.payment_mode if order.payment_mode else 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="text-muted mb-0 small fw-bold">Total Amount</p>
+                            <p class="mb-0 fs-5 fw-bold text-success">₹{{ "%.2f"|format(order.total_amount) }}</p>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-list-ul me-1"></i> Order Items:</h6>
+                    <ul class="list-group list-group-flush">
+                        {% for item in order.order_items %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-dark">{{ item.item_name }}</span>
+                            <span class="badge bg-secondary-subtle text-secondary fw-normal">Qty: {{ item.quantity }}</span>
+                            <span class="fw-bold text-muted">₹{{ "%.2f"|format(item.subtotal) }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="alert alert-info text-center py-5 shadow-sm rounded-xl">
+            <h4 class="alert-heading fw-bold">No Orders Found!</h4>
+            <p class="mb-0">It looks like you haven't placed any orders yet. Head to the menu to start ordering.</p>
+            <a href="{{ url_for('index') }}" class="btn btn-info mt-3"><i class="fas fa-utensils me-2"></i> View Menu</a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

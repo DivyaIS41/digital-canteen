@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow-lg p-5">
+            <h2 class="card-title text-center text-primary mb-4">Finalize Order</h2>
+            
+            <div class="alert alert-info text-center mb-4">
+                <h5 class="mb-0">Total Payable: <strong class="text-success fs-4">₹{{ "%.2f"|format(order_total) }}</strong></h5>
+            </div>
+
+            <p class="lead text-muted text-center mb-4">Select your preferred payment method:</p>
+            
+            <form method="POST">
+                <div class="mb-4">
+                    
+                    <div class="card mb-3 border-primary bg-light">
+                        <div class="card-body py-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_mode" id="wallet" value="Wallet" 
+                                       {% if balance < order_total %}disabled{% else %}checked{% endif %}>
+                                
+                                <label class="form-check-label w-100" for="wallet">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-primary">
+                                            <i class="fas fa-wallet me-2"></i>Student Wallet
+                                        </span>
+                                        <span class="badge bg-secondary">Bal: ₹{{ "%.2f"|format(balance) }}</span>
+                                    </div>
+                                    
+                                    {% if balance < order_total %}
+                                        <small class="text-danger d-block mt-1">
+                                            <i class="fas fa-times-circle"></i> Insufficient Funds (Please use UPI/Cash)
+                                        </small>
+                                    {% else %}
+                                        <small class="text-success d-block mt-1">
+                                            <i class="fas fa-check-circle"></i> Balance Available
+                                        </small>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-check mb-2 ms-2">
+                        <input class="form-check-input" type="radio" name="payment_mode" id="upi" value="UPI" required>
+                        <label class="form-check-label fw-bold" for="upi">
+                            UPI / GPay / PhonePe (Pre-pay)
+                        </label>
+                    </div>
+                    <div class="form-check mb-2 ms-2">
+                        <input class="form-check-input" type="radio" name="payment_mode" id="card" value="Card">
+                        <label class="form-check-label fw-bold" for="card">
+                            Card (Pre-pay)
+                        </label>
+                    </div>
+                    <div class="form-check ms-2">
+                        <input class="form-check-input" type="radio" name="payment_mode" id="cash" value="Cash">
+                        <label class="form-check-label fw-bold" for="cash">
+                            Cash (Pay at counter/pickup)
+                        </label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm">
+                    Place Order (₹{{ "%.2f"|format(order_total) }})
+                </button>
+                <a href="{{ url_for('cart') }}" class="btn btn-outline-secondary w-100 mt-3">
+                    <i class="fas fa-arrow-left me-1"></i> Review Cart
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
