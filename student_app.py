@@ -11,15 +11,27 @@ load_dotenv()
 
 # --- Configuration ---
 app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your_super_secret_key_for_canteen_app')
+# Require FLASK_SECRET_KEY; do not embed real secrets in source
+app.secret_key = os.getenv('FLASK_SECRET_KEY', '')
 
-# MySQL Configuration from .env
+# MySQL Configuration from .env — password default is intentionally empty
 DB_CONFIG = {
     'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', 'itsdivya'),
+    'password': os.getenv('DB_PASSWORD', ''),
     'host': os.getenv('DB_HOST', 'localhost'),
     'database': os.getenv('DB_NAME', 'canteen')
 }
+
+# Validate required environment variables early
+missing_env = []
+if not app.secret_key:
+    missing_env.append('FLASK_SECRET_KEY')
+if not DB_CONFIG.get('password'):
+    missing_env.append('DB_PASSWORD')
+if not DB_CONFIG.get('database'):
+    missing_env.append('DB_NAME')
+if missing_env:
+    raise RuntimeError(f"Missing required environment variables: {', '.join(missing_env)}.\nPlease copy .env.example to .env and set the values before running the app.")
 
 # --- Database Functions ---
 

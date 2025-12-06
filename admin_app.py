@@ -11,11 +11,23 @@ from db_config import fetch_all, fetch_one, execute_query
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SECRET_KEY', 'admin_secret_key_999')
+# Do not keep any real secret in source — require users to set FLASK_SECRET_KEY in .env
+app.secret_key = os.getenv('FLASK_SECRET_KEY', '')
 
-# Admin Credentials from .env
-ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'password123')
+# Admin Credentials from .env (no sensitive defaults)
+ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', '')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', '')
+
+# Fail fast if required environment variables are missing
+missing_env = []
+if not app.secret_key:
+    missing_env.append('FLASK_SECRET_KEY')
+if not ADMIN_USERNAME:
+    missing_env.append('ADMIN_USERNAME')
+if not ADMIN_PASSWORD:
+    missing_env.append('ADMIN_PASSWORD')
+if missing_env:
+    raise RuntimeError(f"Missing required environment variables: {', '.join(missing_env)}.\nPlease copy .env.example to .env and set the values before running the app.")
 
 # --- Context Processor (Prevents Footer Error) ---
 @app.context_processor

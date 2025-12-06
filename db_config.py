@@ -9,10 +9,23 @@ load_dotenv()
 # MySQL Configuration from .env
 DB_CONFIG = {
     'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', 'itsdivya'),
+    # Do NOT store real passwords in source; default is empty so user must set .env
+    'password': os.getenv('DB_PASSWORD', ''),
     'host': os.getenv('DB_HOST', 'localhost'),
     'database': os.getenv('DB_NAME', 'canteen')
 }
+
+
+def validate_db_config():
+    """Checks that required DB config values are present and returns a tuple (ok, msg)."""
+    missing = []
+    if not DB_CONFIG.get('database'):
+        missing.append('DB_NAME')
+    if not DB_CONFIG.get('password'):
+        missing.append('DB_PASSWORD')
+    if missing:
+        return False, f"Missing environment variables: {', '.join(missing)}"
+    return True, 'OK'
 
 def get_db_connection():
     try:
