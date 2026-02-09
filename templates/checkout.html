@@ -17,11 +17,12 @@
             <form method="POST">
                 <div class="mb-4">
                     
+                    <!-- Wallet Option -->
                     <div class="card mb-3 border-primary bg-light">
                         <div class="card-body py-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="payment_mode" id="wallet" value="Wallet" 
-                                       {% if balance < order_total %}disabled{% else %}checked{% endif %}>
+                                       {% if balance < order_total %}disabled{% endif %}>
                                 
                                 <label class="form-check-label w-100" for="wallet">
                                     <div class="d-flex justify-content-between align-items-center">
@@ -33,7 +34,7 @@
                                     
                                     {% if balance < order_total %}
                                         <small class="text-danger d-block mt-1">
-                                            <i class="fas fa-times-circle"></i> Insufficient Funds (Please use UPI/Cash)
+                                            <i class="fas fa-times-circle"></i> Insufficient Funds
                                         </small>
                                     {% else %}
                                         <small class="text-success d-block mt-1">
@@ -42,8 +43,21 @@
                                     {% endif %}
                                 </label>
                             </div>
+                            
+                            <!-- (NEW) PIN Input Section -->
+                            <div id="wallet-pin-section" class="mt-3 ms-4" style="display: none;">
+                                <label for="wallet_pin" class="form-label small fw-bold">Enter Wallet PIN:</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="wallet_pin" name="wallet_pin" placeholder="Default: 1234" style="max-width: 150px;">
+                                </div>
+                                <div class="form-text text-muted" style="font-size: 0.8em;">Use '1234' for testing.</div>
+                            </div>
+
                         </div>
                     </div>
+
+                    <!-- Other Options -->
                     <div class="form-check mb-2 ms-2">
                         <input class="form-check-input" type="radio" name="payment_mode" id="upi" value="UPI" required>
                         <label class="form-check-label fw-bold" for="upi">
@@ -74,4 +88,34 @@
         </div>
     </div>
 </div>
+
+<!-- (NEW) JavaScript to Toggle PIN Input -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const paymentRadios = document.querySelectorAll('input[name="payment_mode"]');
+        const pinSection = document.getElementById("wallet-pin-section");
+        const pinInput = document.getElementById("wallet_pin");
+
+        function togglePin() {
+            // Check if wallet is selected
+            const isWallet = document.getElementById("wallet").checked;
+            if (isWallet) {
+                pinSection.style.display = "block";
+                pinInput.required = true;
+            } else {
+                pinSection.style.display = "none";
+                pinInput.required = false;
+                pinInput.value = ""; // Clear pin if switching away
+            }
+        }
+
+        // Add event listeners to all radios
+        paymentRadios.forEach(radio => {
+            radio.addEventListener("change", togglePin);
+        });
+
+        // Run once on load (in case browser cached the selection)
+        togglePin();
+    });
+</script>
 {% endblock %}
