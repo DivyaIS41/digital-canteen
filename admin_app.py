@@ -120,6 +120,70 @@ def health():
     return {"status": "ok", "service": "admin"}, 200
 
 
+@app.route('/admin/add_item', methods=['POST'])
+@admin_required
+def add_item():
+    item_name = request.form.get('item_name', '').strip()
+    category = request.form.get('category', '').strip()
+    availability_status = 1 if request.form.get('availability_status') == '1' else 0
+
+    try:
+        price = float(request.form.get('price', '0'))
+        discount_raw = request.form.get('discount_percentage', '').strip()
+        discount = float(discount_raw) if discount_raw else 0.0
+    except ValueError:
+        flash("Enter valid numeric values for the new item price and discount.", 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    if not item_name:
+        flash("Item name is required.", 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    if not category:
+        flash("Category is required.", 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    if price <= 0:
+        flash("Price must be greater than zero.", 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    if discount < 0 or discount >= 100:
+        flash("Discount must be between 0 and 99.99.", 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    existing_item = fetch_one(
+        "SELECT item_id FROM item WHERE LOWER(item_name) = LOWER(%s)",
+        (item_name,)
+    )
+    if existing_item:
+        flash("An item with that name already exists.", 'warning')
+        return redirect(url_for('admin_dashboard'))
+
+    new_item_id = execute_query(
+        """
+        INSERT INTO item (item_name, price, category, availability_status)
+        VALUES (%s, %s, %s, %s)
+        """,
+        (item_name, price, category, availability_status),
+        fetch_id=True
+    )
+    if not new_item_id:
+        flash("Could not add the new menu item.", 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    if discount > 0:
+        special_ok = execute_query(
+            "INSERT INTO daily_special (item_id, date, discount_percentage) VALUES (%s, CURDATE(), %s)",
+            (new_item_id, discount)
+        )
+        if not special_ok:
+            flash("Item added, but today's discount could not be saved.", 'warning')
+            return redirect(url_for('admin_dashboard'))
+
+    flash(f"{item_name} added to the menu successfully.", 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
 @app.route('/admin/update_item/<int:item_id>', methods=['POST'])
 @admin_required
 def update_item(item_id):
