@@ -1,19 +1,9 @@
 import mysql.connector
 from flask import flash
-import os
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+from config import build_mysql_config
 
-# MySQL Configuration from .env
-DB_CONFIG = {
-    'user': os.getenv('DB_USER', 'root'),
-    # Do NOT store real passwords in source; default is empty so user must set .env
-    'password': os.getenv('DB_PASSWORD', ''),
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'canteen')
-}
+DB_CONFIG = build_mysql_config()
 
 
 def validate_db_config():
@@ -23,6 +13,8 @@ def validate_db_config():
         missing.append('DB_NAME')
     if not DB_CONFIG.get('password'):
         missing.append('DB_PASSWORD')
+    if not DB_CONFIG.get('host'):
+        missing.append('DB_HOST')
     if missing:
         return False, f"Missing environment variables: {', '.join(missing)}"
     return True, 'OK'

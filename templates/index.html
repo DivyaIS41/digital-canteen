@@ -10,6 +10,46 @@
     </div>
 </div>
 
+<div id="daily-specials" class="row mb-5">
+    <div class="col-12">
+        <div class="card shadow-lg border-0">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div>
+                        <h2 class="text-danger fw-bold mb-1"><i class="fas fa-tags me-2"></i>Today's Specials</h2>
+                        <p class="text-secondary mb-0">Discounted items are highlighted here and also inside the full menu below.</p>
+                    </div>
+                    <span class="badge bg-danger rounded-pill fs-6">{{ specials|length }} Live</span>
+                </div>
+
+                {% if specials %}
+                <div class="row">
+                    {% for item in specials %}
+                    <div class="col-sm-6 col-lg-4 mb-3">
+                        <div class="border rounded-4 p-3 h-100 bg-light">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="fw-bold mb-0">{{ item['item_name'] }}</h5>
+                                <span class="badge bg-danger">{{ "%.0f"|format(item['discount_percentage']) }}% OFF</span>
+                            </div>
+                            <p class="text-muted small mb-2">{{ item['category'] }}</p>
+                            <div class="d-flex align-items-baseline">
+                                <span class="text-decoration-line-through text-muted me-2">₹{{ "%.2f"|format(item['price']) }}</span>
+                                <span class="text-success fw-bold fs-4">₹{{ "%.2f"|format(item['discounted_price']) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-warning mb-0">
+                    No daily specials are active right now. The admin can add one from the dashboard anytime.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 {% if categories %}
     {% for category, items in categories.items() %}
     <div class="row mb-5">

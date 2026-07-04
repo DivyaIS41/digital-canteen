@@ -1,188 +1,132 @@
-🍽️ Digital Canteen Automation System
+# Digital Canteen Automation System
 
-A dual-interface web application designed to modernize food ordering in educational institutions by eliminating long queues and enabling real-time order management.
+Digital Canteen is a Flask + MySQL project with two web apps:
 
-👨‍💻 Developed By
+- `student_app.py` for students to browse the menu, manage a cart, and place orders
+- `admin_app.py` for canteen staff to manage inventory and update order status
 
-Divya K (4SF23IS041)
+This repository is now set up for both local development and cloud deployment.
 
-Chetan S Baliga (4SF23IS033)
+## Architecture
 
-Department of Information Science
-Sahyadri College of Engineering & Management
+- Backend: Flask
+- Database: MySQL
+- Templates: Jinja2
+- Production server: Gunicorn
+- Deployment layout: two web services sharing one MySQL database
 
-📋 Project Overview
+## Local Setup
 
-The Digital Canteen Automation System streamlines the canteen ordering process through two dedicated web applications built using Flask and connected via a shared MySQL database.
+### 1. Install dependencies
 
-System Architecture
+```bash
+pip install -r requirements.txt
+```
 
-Student Application (Port 5000): Browse menu, manage cart, and make secure wallet payments.
+### 2. Configure environment variables
 
-Admin Application (Port 5001): Manage menu items, control inventory, and process orders in real time.
+Copy `.env.example` to `.env` and set real values:
 
-This architecture ensures smooth ordering for students and efficient kitchen management.
-
-🚀 Features
-
-🎓 Student Portal
-
-📖 Digital Menu – Categorized menu with real-time "Sold Out" status.
-
-🛒 Cart System – Add/remove items with live total calculation.
-
-🔐 Secure Wallet – Cashless payments protected by a 4-digit PIN (Default: 1234).
-
-📦 Order History – Track order status (Pending / Completed).
-
-👨‍🍳 Admin Dashboard
-
-🧾 Menu Management – Add, update, or delete food items.
-
-📊 Inventory Control – Toggle availability for out-of-stock items.
-
-⏱️ Order Management – View live orders and mark them as completed.
-
-🛠️ Technology Stack
-
-Layer
-
-Technologies Used
-
-Backend
-
-Python (Flask)
-
-Database
-
-MySQL
-
-Frontend
-
-HTML5, CSS3, Bootstrap 5
-
-Templating
-
-Jinja2
-
-Config Management
-
-python-dotenv
-
-⚙️ Installation & Setup
-
-✅ Prerequisites
-
-Ensure the following are installed:
-
-Python 3.x
-
-MySQL Server
-
-📥 Clone Repository & Install Dependencies
-
-git clone [https://github.com/your-username/digital-canteen.git](https://github.com/your-username/digital-canteen.git)
-cd digital-canteen
-python -m pip install -r requirements.txt
-
-
-🔐 Environment Configuration
-
-Create a .env file in the root directory:
-
+```bash
 copy .env.example .env
+```
 
+Required values:
 
-Update .env with your credentials:
+- `FLASK_SECRET_KEY`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_NAME`
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
 
-FLASK_APP=student_app.py
-FLASK_ENV=development
-SECRET_KEY=your_secret_key_here
+### 3. Initialize the database
 
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_mysql_password
-DB_NAME=canteen_db
-
-
-🗄️ Database Initialization
-
-Option A: Command Line
-
+```bash
 mysql -u root -p < schema.sql
-mysql -u root -p < seed.sql   # Optional sample data
+mysql -u root -p < seed.sql
+```
 
+### 4. Run both apps
 
-Option B: MySQL Workbench
+Student app:
 
-Open MySQL Workbench.
-
-Connect to your local server.
-
-Open schema.sql.
-
-Select all → Click ⚡ Execute.
-
-(Optional) Repeat for seed.sql.
-
-▶️ Running the Application
-
-⚠️ Note: Two terminals are required since this is a dual-server system.
-
-Terminal 1 – Student Application
-
+```bash
 python student_app.py
+```
 
+Admin app:
 
-📍 Runs at: http://127.0.0.1:5000
-
-Terminal 2 – Admin Application
-
+```bash
 python admin_app.py
+```
 
+Default local URLs:
 
-📍 Runs at: http://127.0.0.1:5001
+- Student app: `http://127.0.0.1:5000`
+- Admin app: `http://127.0.0.1:5001`
 
-📂 Project Structure
+## Deployment
 
-digital-canteen/
-│
-├── static/                 # CSS, Images, JavaScript
-├── templates/              # Jinja2 HTML templates
-│   ├── base.html
-│   ├── index.html
-│   ├── login.html
-│   ├── cart.html
-│   └── admin/
-│
-├── student_app.py          # Student portal logic
-├── admin_app.py            # Admin dashboard logic
-├── db_connect.py           # Database connection helper
-├── schema.sql              # Database schema
-├── seed.sql                # Sample data
-├── requirements.txt        # Python dependencies
-├── .env                    # Environment variables (ignored)
-└── README.md
+This project should be deployed as two separate Python web services connected to the same MySQL database.
 
+### Included deployment files
 
-⚠️ Troubleshooting
+- `render.yaml` defines two Render web services
+- `wsgi_student.py` exposes the student app for Gunicorn
+- `wsgi_admin.py` exposes the admin app for Gunicorn
 
-Issue
+### Render deployment
 
-Solution
+1. Push this repository to GitHub.
+2. Create a managed MySQL database, or use an external MySQL provider.
+3. In Render, create services from `render.yaml`.
+4. Add the same database credentials to both services.
+5. Set secure production values:
 
-MySQL Access Denied
+- `FLASK_ENV=production`
+- `FLASK_DEBUG=false`
+- `SESSION_COOKIE_SECURE=true`
+- `FLASK_SECRET_KEY=<strong-random-secret>`
+- `ADMIN_USERNAME=<your-admin-user>`
+- `ADMIN_PASSWORD=<your-admin-password>`
+- `DB_HOST=<mysql-host>`
+- `DB_PORT=3306`
+- `DB_USER=<mysql-user>`
+- `DB_PASSWORD=<mysql-password>`
+- `DB_NAME=<database-name>`
 
-Verify DB_PASSWORD in .env.
+6. Run `schema.sql` and `seed.sql` against the deployed database.
+7. Check both health endpoints after deploy:
 
-Table doesn't exist
+- Student: `/health`
+- Admin: `/health`
 
-Ensure schema.sql was executed.
+### Start commands
 
-Port already in use
+Student service:
 
-Change port in app.run().
+```bash
+gunicorn --bind 0.0.0.0:$PORT wsgi_student:app
+```
 
-📜 License
+Admin service:
 
-This project is developed strictly for academic submission at Sahyadri College of Engineering & Management.
+```bash
+gunicorn --bind 0.0.0.0:$PORT wsgi_admin:app
+```
+
+## Production notes
+
+- The app now fails fast if `FLASK_SECRET_KEY` is missing.
+- The app now fails fast if `FLASK_SECRET_KEY` is weak or placeholder-like.
+- The admin app rejects short production passwords.
+- Session cookies can be marked secure in production with `SESSION_COOKIE_SECURE=true`.
+- Ports are controlled by environment variables instead of hardcoded debug-only startup.
+- The `daily_special` route redirects back into the menu page where specials are displayed.
+
+## Important security reminder
+
+Do not commit your real `.env` file. If the current `.env` contains real passwords, rotate them before publishing the repository.

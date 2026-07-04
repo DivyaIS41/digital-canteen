@@ -42,6 +42,7 @@ CREATE TABLE daily_special (
   date DATE NOT NULL,
   discount_percentage DECIMAL(5,2) NOT NULL,
   PRIMARY KEY (special_id),
+  UNIQUE KEY uq_daily_special_item_date (item_id, date),
   KEY idx_daily_special_item (item_id),
   CONSTRAINT fk_daily_special_item FOREIGN KEY (item_id) REFERENCES item(item_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

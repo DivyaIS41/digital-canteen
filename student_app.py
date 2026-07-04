@@ -1,46 +1,17 @@
-import mysql.connector
-from flask import Flask, render_template, request, url_for, redirect, flash, session
-from datetime import datetime, date
+import os
+from datetime import date, datetime
 from decimal import Decimal
 from functools import wraps
-import os
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+import mysql.connector
+from flask import Flask, flash, redirect, render_template, request, session, url_for
+
+from config import apply_flask_config, build_mysql_config, env_flag, env_int
 
 # --- Configuration ---
 app = Flask(__name__)
-# Require FLASK_SECRET_KEY; do not embed real secrets in source
-app.secret_key = os.getenv('FLASK_SECRET_KEY', '')
-
-# MySQL Configuration from .env — password default is intentionally empty
-DB_CONFIG = {
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', ''),
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'canteen')
-}
-
-# Validate required environment variables early
-missing_env = []
-if not app.secret_key:
-    # Fallback for dev if needed, or keep strict:
-    pass # missing_env.append('FLASK_SECRET_KEY') 
-    # Commented out strict check for Canvas preview purposes, 
-    # strictly enable this in production.
-    if not app.secret_key: app.secret_key = 'dev_secret_key'
-
-if not DB_CONFIG.get('password'):
-    # missing_env.append('DB_PASSWORD') 
-    pass # Allow empty password for local dev if configured that way
-
-if not DB_CONFIG.get('database'):
-    missing_env.append('DB_NAME')
-
-if missing_env:
-    # In a real deployment, raise the error. For now, we print warning.
-    print(f"WARNING: Missing env vars: {', '.join(missing_env)}")
+apply_flask_config(app)
+DB_CONFIG = build_mysql_config()
 
 # --- Database Functions ---
 
@@ -245,45 +216,30 @@ def index():
     menu_items = fetch_all(menu_query)
 
     categories = {}
+    specials = []
     for item in menu_items:
         category = item['category']
         if category not in categories:
             categories[category] = []
         categories[category].append(item)
+        if item['is_special']:
+            specials.append(item)
         
-    return render_template('index.html', categories=categories)
+    return render_template('index.html', categories=categories, specials=specials)
 
 @app.route('/menu')
 @student_required
 def menu():
     return index() # Reuses the logic from index
 
+@app.route('/health')
+def health():
+    return {"status": "ok", "service": "student"}, 200
+
 @app.route('/daily_special')
 @student_required
 def daily_special():
-    menu_query = """
-    SELECT i.item_id, i.item_name, i.price, i.category, i.availability_status,
-           ds.discount_percentage,
-           1 AS is_special,
-           ROUND(i.price * (1 - ds.discount_percentage / 100), 2) AS discounted_price
-    FROM item i
-    JOIN daily_special ds ON i.item_id = ds.item_id AND ds.date = CURDATE()
-    WHERE i.availability_status = 1
-    ORDER BY i.category, i.item_name;
-    """
-    menu_items = fetch_all(menu_query)
-
-    categories = {}
-    for item in menu_items:
-        category = item['category']
-        if category not in categories:
-            categories[category] = []
-        categories[category].append(item)
-        
-    cart = session.get('cart', [])
-    if not isinstance(cart, list): cart = []
-
-    return render_template('daily_special.html', categories=categories, cart_item_count=len(cart))
+    return redirect(url_for('index') + '#daily-specials')
 
 
 @app.route('/add_to_cart/<int:item_id>', methods=['POST'])
@@ -540,5 +496,7 @@ def orders():
     return render_template('orders.html', orders=orders_list)
 
 if __name__ == '__main__':
-    print("--- STUDENT APP RUNNING ON PORT 5000 ---")
-    app.run(debug=True, port=5000)
+    port = env_int('PORT', 5000)
+    debug = env_flag('FLASK_DEBUG', default=False)
+    print(f"--- STUDENT APP RUNNING ON PORT {port} ---")
+    app.run(host='0.0.0.0', port=port, debug=debug)

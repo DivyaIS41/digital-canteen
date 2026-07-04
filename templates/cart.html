@@ -14,17 +14,20 @@
                     {% for item in cart %}
                     <li class="list-group-item d-flex justify-content-between align-items-center py-3">
                         <div class="me-3">
-                            <h5 class="mb-1 fw-bold">{{ item.item_name }} 
+                            <h5 class="mb-1 fw-bold">{{ item.item_name }}
                                 {% if item.is_special %}
                                     <span class="badge bg-danger ms-2">SPECIAL</span>
                                 {% endif %}
                             </h5>
-                            <span class="text-muted small">Unit Price: ₹{{ "%.2f"|format(item.price) }}</span>
+                            {% if item.is_special %}
+                                <span class="text-muted small text-decoration-line-through me-2">Unit Price: ₹{{ "%.2f"|format(item.price) }}</span>
+                                <span class="text-success small fw-bold">Special Price: ₹{{ "%.2f"|format(item.discounted_price) }}</span>
+                            {% else %}
+                                <span class="text-muted small">Unit Price: ₹{{ "%.2f"|format(item.price) }}</span>
+                            {% endif %}
                         </div>
-                        
+
                         <div class="text-end d-flex align-items-center">
-                            
-                            <!-- QUANTITY UPDATE FORM -->
                             <form action="{{ url_for('update_cart', item_id=item.item_id) }}" method="POST" class="d-flex me-4">
                                 <label class="me-2 small d-none d-sm-block">Qty:</label>
                                 <input type="number" name="quantity" class="form-control form-control-sm text-center" value="{{ item.quantity }}" min="1" style="width: 70px;" required>
@@ -32,13 +35,11 @@
                                     <i class="fas fa-sync-alt"></i>
                                 </button>
                             </form>
-                            
-                            <!-- LINE TOTAL -->
+
                             <div class="fw-bold fs-5 me-4 text-primary" style="min-width: 80px;">
                                 ₹{{ "%.2f"|format(item.line_total) }}
                             </div>
-                            
-                            <!-- REMOVE BUTTON (Bug Fix) -->
+
                             <form action="{{ url_for('remove_from_cart', item_id=item.item_id) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove {{ item.item_name }}?');">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Item">
                                     <i class="fas fa-trash"></i>
@@ -56,7 +57,7 @@
                 <h4 class="mb-0 text-dark fw-bold">Grand Total:</h4>
                 <h4 class="mb-0 text-success fw-bold display-6">₹{{ "%.2f"|format(order_total) }}</h4>
             </div>
-            
+
             <a href="{{ url_for('checkout') }}" class="btn btn-lg btn-primary w-100">
                 <i class="fas fa-money-check-alt me-2"></i> Proceed to Checkout
             </a>
