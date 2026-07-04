@@ -6,12 +6,16 @@ from functools import wraps
 import mysql.connector
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 
-from config import apply_flask_config, build_mysql_config, env_flag, env_int
+from config import apply_flask_config, build_mysql_config, env_flag, env_int, is_production
 
 # --- Configuration ---
 app = Flask(__name__)
 apply_flask_config(app)
 DB_CONFIG = build_mysql_config()
+WALLET_PIN = os.getenv('WALLET_PIN', '')
+
+if is_production() and not WALLET_PIN:
+    raise RuntimeError("WALLET_PIN is required in production.")
 
 # --- Database Functions ---
 
@@ -384,8 +388,7 @@ def checkout():
                 # --- NEW PIN VERIFICATION LOGIC ---
                 pin = request.form.get('wallet_pin')
                 
-                # Verify PIN (Default 1234)
-                if pin != '1234':
+                if not WALLET_PIN or pin != WALLET_PIN:
                     flash("Invalid Wallet PIN. Payment failed.", 'danger')
                     return redirect(url_for('checkout'))
 

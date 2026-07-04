@@ -8,71 +8,77 @@
 </h1>
 
 <div class="row align-items-start">
-    <div class="col-xl-7 mb-5">
+    <div class="col-lg-8 mb-5">
         <div class="card shadow-lg p-4">
             <h2 class="card-title text-primary mb-4 border-bottom pb-2">Menu, Pricing and Daily Specials</h2>
-            <div class="table-responsive">
-                <table class="table table-hover table-sm align-middle">
+            <div class="table-responsive" style="overflow-x: auto;">
+                <table class="table table-hover table-sm align-middle" style="font-size: 0.85rem;">
                     <thead class="table-light">
                         <tr>
-                            <th>Item</th>
-                            <th>Category</th>
-                            <th>Pricing and Special</th>
-                            <th>Live Price</th>
-                            <th>Status</th>
-                            <th class="text-center">Controls</th>
+                            <th style="width: 15%;">Item</th>
+                            <th style="width: 10%;">Category</th>
+                            <th style="width: 22%;">Price & Discount</th>
+                            <th style="width: 12%;">Live Price</th>
+                            <th style="width: 11%;">Status</th>
+                            <th style="width: 30%;">Controls</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in menu_items %}
                         <tr>
-                            <td class="fw-bold">{{ item['item_name'] }}</td>
-                            <td><span class="badge bg-secondary">{{ item['category'] }}</span></td>
-                            <td style="min-width: 260px;">
-                                <form action="{{ url_for('update_item', item_id=item['item_id']) }}" method="POST" class="d-flex flex-column gap-2">
-                                    <div>
-                                        <label class="form-label small text-muted mb-1">Base price</label>
-                                        <input type="number" name="price" class="form-control form-control-sm" min="1" step="0.01" value="{{ '%.2f'|format(item['price']) }}" required>
-                                    </div>
-                                    <div>
-                                        <label class="form-label small text-muted mb-1">Today's discount</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="number" name="discount_percentage" class="form-control" min="0" max="99.99" step="0.01" value="{% if item['is_special'] %}{{ '%.2f'|format(item['discount_percentage']) }}{% else %}0.00{% endif %}">
-                                            <span class="input-group-text">%</span>
+                            <td class="fw-bold" style="word-wrap: break-word;">{{ item['item_name'] }}</td>
+                            <td><span class="badge bg-secondary" style="font-size: 0.75rem;">{{ item['category'] }}</span></td>
+                            <td style="padding: 0.5rem;">
+                                <form action="{{ url_for('update_item', item_id=item['item_id']) }}" method="POST" class="d-flex flex-column gap-1">
+                                    <div class="d-flex gap-1">
+                                        <div style="flex: 1;">
+                                            <input type="number" name="price" class="form-control form-control-sm" min="1" step="0.01" value="{{ '%.2f'|format(item['price']) }}" required title="Base price">
                                         </div>
-                                        <div class="form-text">Set `0` to remove today's special.</div>
+                                        <div style="flex: 1;">
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" name="discount_percentage" class="form-control" min="0" max="99.99" step="0.01" value="{% if item['is_special'] %}{{ '%.2f'|format(item['discount_percentage']) }}{% else %}0.00{% endif %}" title="Discount %">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <button type="submit" class="btn btn-sm btn-primary w-100">
-                                        <i class="fas fa-pen me-1"></i> Save Price and Discount
+                                    <button type="submit" class="btn btn-sm btn-primary" style="font-size: 0.7rem; padding: 0.25rem 0.5rem;">
+                                        <i class="fas fa-save"></i> Save
                                     </button>
                                 </form>
                             </td>
-                            <td>
+                            <td style="text-align: center;">
                                 {% if item['is_special'] %}
-                                    <div class="fw-bold text-success">₹{{ "%.2f"|format(item['discounted_price']) }}</div>
-                                    <span class="badge bg-danger">Special Live</span>
+                                    <div class="fw-bold text-success" style="font-size: 0.9rem;">₹{{ "%.2f"|format(item['discounted_price']) }}</div>
+                                    <span class="badge bg-danger" style="font-size: 0.65rem;">Special</span>
                                 {% else %}
-                                    <div class="fw-bold text-dark">₹{{ "%.2f"|format(item['price']) }}</div>
-                                    <span class="badge bg-light text-dark border">Regular Price</span>
+                                    <div class="fw-bold text-dark" style="font-size: 0.9rem;">₹{{ "%.2f"|format(item['price']) }}</div>
+                                    <span class="badge bg-light text-dark border" style="font-size: 0.65rem;">Regular</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                {% if item['availability_status'] == 1 %}
+                                    <span class="badge bg-success" style="font-size: 0.7rem;">Available</span>
+                                {% else %}
+                                    <span class="badge bg-secondary" style="font-size: 0.7rem;">Unavailable</span>
                                 {% endif %}
                             </td>
                             <td>
-                                {% if item['availability_status'] == 1 %}
-                                    <span class="badge bg-success">Available</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Unavailable</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <form action="{{ url_for('update_availability', item_id=item['item_id']) }}" method="POST">
-                                    <button type="submit" class="btn btn-sm {% if item['availability_status'] == 1 %}btn-outline-danger{% else %}btn-outline-success{% endif %} w-100" style="min-width: 120px;">
-                                        {% if item['availability_status'] == 1 %}
-                                            <i class="fas fa-eye-slash me-1"></i> Hide
-                                        {% else %}
-                                            <i class="fas fa-eye me-1"></i> Show
-                                        {% endif %}
-                                    </button>
-                                </form>
+                                <div class="d-flex gap-1">
+                                    <form action="{{ url_for('update_availability', item_id=item['item_id']) }}" method="POST">
+                                        <button type="submit" class="btn btn-sm {% if item['availability_status'] == 1 %}btn-outline-danger{% else %}btn-outline-success{% endif %}" style="font-size: 0.7rem; padding: 0.25rem 0.4rem;">
+                                            {% if item['availability_status'] == 1 %}
+                                                <i class="fas fa-eye-slash"></i>
+                                            {% else %}
+                                                <i class="fas fa-eye"></i>
+                                            {% endif %}
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('delete_item', item_id=item['item_id']) }}" method="POST" data-item-name="{{ item['item_name']|e }}" onsubmit="return confirm('Delete ' + this.dataset.itemName + ' from the menu?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" style="font-size: 0.7rem; padding: 0.25rem 0.4rem;">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -82,7 +88,7 @@
         </div>
     </div>
 
-    <div class="col-xl-5 mb-5">
+    <div class="col-lg-4 mb-5">
         <div class="card shadow-lg p-4 mb-4 border-0">
             <h2 class="card-title text-success mb-4 border-bottom pb-2">Add New Menu Item</h2>
             <form action="{{ url_for('add_item') }}" method="POST" class="row g-3">

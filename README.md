@@ -41,6 +41,7 @@ Required values:
 - `DB_NAME`
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD`
+- `WALLET_PIN`
 
 ### 3. Initialize the database
 
@@ -92,6 +93,7 @@ This project should be deployed as two separate Python web services connected to
 - `FLASK_SECRET_KEY=<strong-random-secret>`
 - `ADMIN_USERNAME=<your-admin-user>`
 - `ADMIN_PASSWORD=<your-admin-password>`
+- `WALLET_PIN=<private-wallet-pin>`
 - `DB_HOST=<mysql-host>`
 - `DB_PORT=3306`
 - `DB_USER=<mysql-user>`
@@ -123,6 +125,7 @@ gunicorn --bind 0.0.0.0:$PORT wsgi_admin:app
 - The app now fails fast if `FLASK_SECRET_KEY` is missing.
 - The app now fails fast if `FLASK_SECRET_KEY` is weak or placeholder-like.
 - The admin app rejects short production passwords.
+- The student app requires `WALLET_PIN` in production.
 - Session cookies can be marked secure in production with `SESSION_COOKIE_SECURE=true`.
 - Ports are controlled by environment variables instead of hardcoded debug-only startup.
 - The `daily_special` route redirects back into the menu page where specials are displayed.

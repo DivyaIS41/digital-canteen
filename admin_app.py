@@ -250,6 +250,47 @@ def update_item(item_id):
     flash(f"{item['item_name']} price updated.", 'success')
     return redirect(url_for('admin_dashboard'))
 
+@app.route('/admin/delete_item/<int:item_id>', methods=['POST'])
+@admin_required
+def delete_item(item_id):
+    item = fetch_one("SELECT item_name FROM item WHERE item_id = %s", (item_id,))
+    if not item:
+        flash("Item not found.", 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    order_count = fetch_one(
+        "SELECT COUNT(*) AS count FROM order_item WHERE item_id = %s",
+        (item_id,)
+    )
+    if order_count and order_count['count'] > 0:
+        unavailable_ok = execute_query(
+            "UPDATE item SET availability_status = 0 WHERE item_id = %s",
+            (item_id,)
+        )
+        if not unavailable_ok:
+            flash("Could not mark item unavailable.", 'danger')
+            return redirect(url_for('admin_dashboard'))
+
+        flash(
+            f"{item['item_name']} is used in past orders, so it was marked unavailable instead of deleted.",
+            'warning'
+        )
+        return redirect(url_for('admin_dashboard'))
+
+    delete_special_ok = execute_query("DELETE FROM daily_special WHERE item_id = %s", (item_id,))
+    if not delete_special_ok:
+        flash("Could not remove the item from today's specials.", 'warning')
+        return redirect(url_for('admin_dashboard'))
+
+    delete_item_ok = execute_query("DELETE FROM item WHERE item_id = %s", (item_id,))
+    if delete_item_ok:
+        flash(f"{item['item_name']} deleted from the menu.", 'success')
+    else:
+        flash("Could not delete item.", 'danger')
+
+    return redirect(url_for('admin_dashboard'))
+
+
 @app.route('/admin/update_availability/<int:item_id>', methods=['POST'])
 @admin_required
 def update_availability(item_id):
