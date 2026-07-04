@@ -2,6 +2,7 @@ services:
   - type: web
     name: digital-canteen-student
     runtime: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --bind 0.0.0.0:$PORT wsgi_student:app
     envVars:
@@ -30,6 +31,7 @@ services:
   - type: web
     name: digital-canteen-admin
     runtime: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --bind 0.0.0.0:$PORT wsgi_admin:app
     envVars:
