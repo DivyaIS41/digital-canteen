@@ -1,4 +1,4 @@
-USE canteen;
+USE defaultdb;
 
 -- Sample items
 INSERT INTO item (item_name, price, category, availability_status) VALUES
