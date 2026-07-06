@@ -12,15 +12,15 @@
         <div class="card shadow-lg p-4">
             <h2 class="card-title text-primary mb-4 border-bottom pb-2">Menu, Pricing and Daily Specials</h2>
             <div class="table-responsive" style="overflow-x: auto;">
-                <table class="table table-hover table-sm align-middle" style="font-size: 0.85rem;">
+                <table class="table table-hover table-sm align-middle w-100" style="font-size: 0.85rem; table-layout: fixed;">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 15%;">Item</th>
-                            <th style="width: 10%;">Category</th>
-                            <th style="width: 22%;">Price & Discount</th>
-                            <th style="width: 12%;">Live Price</th>
-                            <th style="width: 11%;">Status</th>
-                            <th style="width: 30%;">Controls</th>
+                            <th style="width: 16%;">Item</th>
+                            <th style="width: 11%;">Category</th>
+                            <th style="width: 24%;">Price & Discount</th>
+                            <th style="width: 13%;">Live Price</th>
+                            <th style="width: 13%;">Status</th>
+                            <th style="width: 23%; text-align: right;">Controls</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -30,11 +30,11 @@
                             <td><span class="badge bg-secondary" style="font-size: 0.75rem;">{{ item['category'] }}</span></td>
                             <td style="padding: 0.5rem;">
                                 <form action="{{ url_for('update_item', item_id=item['item_id']) }}" method="POST" class="d-flex flex-column gap-1">
-                                    <div class="d-flex gap-1">
-                                        <div style="flex: 1;">
+                                    <div class="d-flex gap-2">
+                                        <div style="flex: 0.9;">
                                             <input type="number" name="price" class="form-control form-control-sm" min="1" step="0.01" value="{{ '%.2f'|format(item['price']) }}" required title="Base price">
                                         </div>
-                                        <div style="flex: 1;">
+                                        <div style="flex: 1.1;">
                                             <div class="input-group input-group-sm">
                                                 <input type="number" name="discount_percentage" class="form-control" min="0" max="99.99" step="0.01" value="{% if item['is_special'] %}{{ '%.2f'|format(item['discount_percentage']) }}{% else %}0.00{% endif %}" title="Discount %">
                                                 <span class="input-group-text">%</span>
@@ -63,7 +63,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <div class="d-flex gap-1">
+                                <div class="d-flex justify-content-end gap-1">
                                     <form action="{{ url_for('update_availability', item_id=item['item_id']) }}" method="POST">
                                         <button type="submit" class="btn btn-sm {% if item['availability_status'] == 1 %}btn-outline-danger{% else %}btn-outline-success{% endif %}" style="font-size: 0.7rem; padding: 0.25rem 0.4rem;">
                                             {% if item['availability_status'] == 1 %}

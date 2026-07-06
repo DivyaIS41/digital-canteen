@@ -1,93 +1,20 @@
 import os
+import sqlite3
 from datetime import date, datetime
-from decimal import Decimal
 from functools import wraps
 
-import mysql.connector
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 
-from config import apply_flask_config, build_mysql_config, env_flag, env_int, is_production
+from config import apply_flask_config, env_flag, env_int, is_production
+from db_config import fetch_all, fetch_one, get_db_connection, prepare_query
 
 # --- Configuration ---
 app = Flask(__name__)
 apply_flask_config(app)
-DB_CONFIG = build_mysql_config()
 WALLET_PIN = os.getenv('WALLET_PIN', '')
 
 if is_production() and not WALLET_PIN:
     raise RuntimeError("WALLET_PIN is required in production.")
-
-# --- Database Functions ---
-
-def get_db_connection():
-    try:
-        conn = mysql.connector.connect(**DB_CONFIG)
-        return conn
-    except mysql.connector.Error as err:
-        print(f"Error connecting to MySQL: {err}")
-        flash("Database connection error. Please contact administrator.", 'danger')
-        return None
-
-def fetch_all(query, params=None):
-    conn = get_db_connection()
-    if not conn: return []
-    
-    cursor = conn.cursor(dictionary=True)
-    try:
-        cursor.execute(query, params or ())
-        result = cursor.fetchall()
-        # Convert Decimals to float
-        for row in result:
-            for key, value in row.items():
-                if isinstance(value, Decimal):
-                    row[key] = float(value)
-        return result
-    except mysql.connector.Error as err:
-        print(f"Database error in fetch_all: {err}")
-        return []
-    finally:
-        cursor.close()
-        conn.close()
-
-def fetch_one(query, params=None):
-    conn = get_db_connection()
-    if not conn: return None
-    
-    cursor = conn.cursor(dictionary=True)
-    try:
-        cursor.execute(query, params or ())
-        result = cursor.fetchone()
-        if result:
-            for key, value in result.items():
-                if isinstance(value, Decimal):
-                    result[key] = float(value)
-        return result
-    except mysql.connector.Error as err:
-        print(f"Database error in fetch_one: {err}")
-        return None
-    finally:
-        cursor.close()
-        conn.close()
-
-def execute_query(query, params=None, fetch_id=False):
-    conn = get_db_connection()
-    if not conn: return None
-        
-    cursor = conn.cursor()
-    try:
-        cursor.execute(query, params or ())
-        conn.commit()
-        if fetch_id:
-            last_id = cursor.lastrowid
-            return last_id
-        return True
-    except mysql.connector.Error as err:
-        print(f"Database error in execute_query: {err}")
-        conn.rollback()
-        return False
-    finally:
-        cursor.close()
-        conn.close()
 
 # --- Utility Functions ---
 
@@ -370,13 +297,21 @@ def checkout():
     # Fetch wallet balance for the GET request or POST check
     conn = get_db_connection()
     if not conn: return redirect(url_for('cart'))
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     
     # Note: Assuming column name is 'balance' based on user input. 
     # If DB uses 'wallet_balance', change this query accordingly.
-    cursor.execute("SELECT balance FROM student WHERE student_id = %s", (session['student_id'],))
+    cursor.execute(
+        prepare_query("SELECT balance FROM student WHERE student_id = %s"),
+        (session['student_id'],),
+    )
     res = cursor.fetchone()
     balance = float(res['balance']) if res else 0.0
+
+    if request.method != 'POST':
+        cursor.close()
+        conn.close()
+        return render_template('checkout.html', cart=cart, order_total=order_total, balance=balance)
 
     if request.method == 'POST':
         try:
@@ -399,7 +334,10 @@ def checkout():
                 
                 # Deduct Balance
                 new_balance = balance - order_total
-                cursor.execute("UPDATE student SET balance = %s WHERE student_id = %s", (new_balance, student_id))
+                cursor.execute(
+                    prepare_query("UPDATE student SET balance = %s WHERE student_id = %s"),
+                    (new_balance, student_id),
+                )
                 # ----------------------------------
 
             # Insert Order
@@ -407,8 +345,8 @@ def checkout():
             INSERT INTO order_info (student_id, order_date, order_time, total_amount, status)
             VALUES (%s, %s, %s, %s, %s)
             """
-            order_params = (student_id, date.today(), datetime.now().strftime('%H:%M:%S'), Decimal(order_total), 'Pending')
-            cursor.execute(order_info_query, order_params)
+            order_params = (student_id, date.today(), datetime.now().strftime('%H:%M:%S'), order_total, 'Pending')
+            cursor.execute(prepare_query(order_info_query), order_params)
             new_order_id = cursor.lastrowid
 
             # Insert Payment
@@ -417,8 +355,8 @@ def checkout():
             INSERT INTO payment (order_id, payment_mode, amount_paid, payment_status, transaction_date)
             VALUES (%s, %s, %s, %s, %s)
             """
-            payment_params = (new_order_id, payment_mode, Decimal(order_total), payment_status, date.today())
-            cursor.execute(payment_query, payment_params)
+            payment_params = (new_order_id, payment_mode, order_total, payment_status, date.today())
+            cursor.execute(prepare_query(payment_query), payment_params)
             
             # Insert Items
             order_item_query = """
@@ -426,8 +364,8 @@ def checkout():
             VALUES (%s, %s, %s, %s)
             """
             for item in cart:
-                item_params = (new_order_id, item['item_id'], item['quantity'], Decimal(item['line_total']))
-                cursor.execute(order_item_query, item_params)
+                item_params = (new_order_id, item['item_id'], item['quantity'], item['line_total'])
+                cursor.execute(prepare_query(order_item_query), item_params)
 
             conn.commit()
             session.pop('cart', None)
@@ -435,7 +373,7 @@ def checkout():
             flash("Order placed successfully!", 'success')
             return redirect(url_for('order_success', order_id=new_order_id))
 
-        except mysql.connector.Error as err:
+        except sqlite3.Error as err:
             print(f"Checkout Error: {err}")
             conn.rollback()
             flash(f"An error occurred during checkout: {err}", 'danger')
@@ -443,8 +381,8 @@ def checkout():
         finally:
             cursor.close()
             conn.close()
-
-    return render_template('checkout.html', cart=cart, order_total=order_total, balance=balance)
+    
+    return redirect(url_for('cart'))
 
 @app.route('/order_success/<int:order_id>')
 @student_required

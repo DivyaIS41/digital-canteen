@@ -25,14 +25,9 @@ def is_production():
     return os.getenv("FLASK_ENV", "").strip().lower() == "production"
 
 
-def build_mysql_config():
-    return {
-        "user": os.getenv("DB_USER", "root"),
-        "password": os.getenv("DB_PASSWORD", ""),
-        "host": os.getenv("DB_HOST", "localhost"),
-        "database": os.getenv("DB_NAME", "canteen"),
-        "port": env_int("DB_PORT", 3306),
-    }
+def build_sqlite_path():
+    db_path = os.getenv("SQLITE_DB_PATH", "data/canteen.db")
+    return os.path.abspath(db_path)
 
 
 def validate_env(required_keys):

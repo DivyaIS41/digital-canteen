@@ -1,19 +1,17 @@
 # Digital Canteen Automation System
 
-Digital Canteen is a Flask + MySQL project with two web apps:
+Digital Canteen is a Flask prototype with two web apps backed by SQLite:
 
 - `student_app.py` for students to browse the menu, manage a cart, and place orders
-- `admin_app.py` for canteen staff to manage inventory and update order status
-
-This repository is now set up for both local development and cloud deployment.
+- `admin_app.py` for canteen staff to manage items, specials, pricing, and orders
 
 ## Architecture
 
 - Backend: Flask
-- Database: MySQL
+- Database: SQLite
 - Templates: Jinja2
 - Production server: Gunicorn
-- Deployment layout: two web services sharing one MySQL database
+- Deployment shape: two app processes on the same host sharing one SQLite database file
 
 ## Local Setup
 
@@ -25,7 +23,7 @@ pip install -r requirements.txt
 
 ### 2. Configure environment variables
 
-Copy `.env.example` to `.env` and set real values:
+Copy `.env.example` to `.env` and fill in real values:
 
 ```bash
 copy .env.example .env
@@ -34,21 +32,18 @@ copy .env.example .env
 Required values:
 
 - `FLASK_SECRET_KEY`
-- `DB_HOST`
-- `DB_PORT`
-- `DB_USER`
-- `DB_PASSWORD`
-- `DB_NAME`
+- `SQLITE_DB_PATH`
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD`
 - `WALLET_PIN`
 
-### 3. Initialize the database
+### 3. Initialize the SQLite database
 
 ```bash
-mysql -u root -p < schema.sql
-mysql -u root -p < seed.sql
+python init_sqlite_db.py
 ```
+
+This creates the database file, applies `schema.sql`, and loads sample data from `seed.sql`.
 
 ### 4. Run both apps
 
@@ -71,21 +66,20 @@ Default local URLs:
 
 ## Deployment
 
-This project should be deployed as two separate Python web services connected to the same MySQL database.
+This prototype is deployment-worthy for a simple single-host setup.
+Use one machine or one VPS with a persistent writable filesystem so both apps point to the same SQLite file.
 
 ### Included deployment files
 
-- `render.yaml` defines two Render web services
 - `wsgi_student.py` exposes the student app for Gunicorn
 - `wsgi_admin.py` exposes the admin app for Gunicorn
 
-### Render deployment
+### Prototype deployment steps
 
 1. Push this repository to GitHub.
-2. Create a managed MySQL database, or use an external MySQL provider.
-3. In Render, create services from `render.yaml`.
-4. Add the same database credentials to both services.
-5. Set secure production values:
+2. Choose a host that supports a persistent SQLite file.
+3. Run both apps on that same host.
+4. Set these environment variables:
 
 - `FLASK_ENV=production`
 - `FLASK_DEBUG=false`
@@ -94,14 +88,16 @@ This project should be deployed as two separate Python web services connected to
 - `ADMIN_USERNAME=<your-admin-user>`
 - `ADMIN_PASSWORD=<your-admin-password>`
 - `WALLET_PIN=<private-wallet-pin>`
-- `DB_HOST=<mysql-host>`
-- `DB_PORT=3306`
-- `DB_USER=<mysql-user>`
-- `DB_PASSWORD=<mysql-password>`
-- `DB_NAME=<database-name>`
+- `SQLITE_DB_PATH=<path-to-persistent-canteen.db>`
 
-6. Run `schema.sql` and `seed.sql` against the deployed database.
-7. Check both health endpoints after deploy:
+5. Run:
+
+```bash
+python init_sqlite_db.py
+```
+
+6. Start both apps with Gunicorn or Python on that same host.
+7. Check both health endpoints:
 
 - Student: `/health`
 - Admin: `/health`
@@ -120,16 +116,15 @@ Admin service:
 gunicorn --bind 0.0.0.0:$PORT wsgi_admin:app
 ```
 
-## Production notes
+## Notes
 
-- The app now fails fast if `FLASK_SECRET_KEY` is missing.
-- The app now fails fast if `FLASK_SECRET_KEY` is weak or placeholder-like.
-- The admin app rejects short production passwords.
+- The app now uses SQLite instead of MySQL.
+- SQLite is fine for a personal prototype, demo, or portfolio project.
+- SQLite is not ideal for heavy concurrent multi-user production traffic.
+- SQLite is also not a great fit for split multi-service cloud deployments where each service has separate filesystem storage.
+- The admin app still uses `.env` credentials for admin login.
 - The student app requires `WALLET_PIN` in production.
-- Session cookies can be marked secure in production with `SESSION_COOKIE_SECURE=true`.
-- Ports are controlled by environment variables instead of hardcoded debug-only startup.
-- The `daily_special` route redirects back into the menu page where specials are displayed.
 
-## Important security reminder
+## Important Security Reminder
 
-Do not commit your real `.env` file. If the current `.env` contains real passwords, rotate them before publishing the repository.
+Do not commit your real `.env` file. If your old MySQL credentials were ever published, rotate them.
