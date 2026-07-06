@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: digital-canteen-demo
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: test -f /opt/render/project/src/data/canteen.db || python init_sqlite_db.py; gunicorn --bind 0.0.0.0:$PORT combined_wsgi:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "false"
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: SESSION_LIFETIME_SECONDS
+        value: "7200"
+      - key: SQLITE_DB_PATH
+        value: /opt/render/project/src/data/canteen.db
+      - key: FLASK_SECRET_KEY
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: WALLET_PIN
+        sync: false
+    disk:
+      name: sqlite-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1

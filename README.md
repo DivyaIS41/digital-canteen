@@ -11,7 +11,7 @@ Digital Canteen is a Flask prototype with two web apps backed by SQLite:
 - Database: SQLite
 - Templates: Jinja2
 - Production server: Gunicorn
-- Deployment shape: two app processes on the same host sharing one SQLite database file
+- Deployment shape: one Render web service serving both apps and one SQLite database file on a persistent disk
 
 ## Local Setup
 
@@ -45,7 +45,7 @@ python init_sqlite_db.py
 
 This creates the database file, applies `schema.sql`, and loads sample data from `seed.sql`.
 
-### 4. Run both apps
+### 4. Run both apps locally
 
 Student app:
 
@@ -66,20 +66,21 @@ Default local URLs:
 
 ## Deployment
 
-This prototype is deployment-worthy for a simple single-host setup.
-Use one machine or one VPS with a persistent writable filesystem so both apps point to the same SQLite file.
+This prototype is deployment-worthy on Render as a single web service with a persistent disk for SQLite.
+That avoids the "two services cannot share one disk" limitation.
 
 ### Included deployment files
 
 - `wsgi_student.py` exposes the student app for Gunicorn
 - `wsgi_admin.py` exposes the admin app for Gunicorn
+- `combined_wsgi.py` exposes both apps together for Render
+- `render.yaml` defines the Render web service and disk
 
-### Prototype deployment steps
+### Render demo deployment
 
 1. Push this repository to GitHub.
-2. Choose a host that supports a persistent SQLite file.
-3. Run both apps on that same host.
-4. Set these environment variables:
+2. Create a new Blueprint service in Render from this repo.
+3. Set these environment variables:
 
 - `FLASK_ENV=production`
 - `FLASK_DEBUG=false`
@@ -88,40 +89,27 @@ Use one machine or one VPS with a persistent writable filesystem so both apps po
 - `ADMIN_USERNAME=<your-admin-user>`
 - `ADMIN_PASSWORD=<your-admin-password>`
 - `WALLET_PIN=<private-wallet-pin>`
-- `SQLITE_DB_PATH=<path-to-persistent-canteen.db>`
+- `SQLITE_DB_PATH=/opt/render/project/src/data/canteen.db`
 
-5. Run:
+4. Render will mount a persistent disk at `/opt/render/project/src/data`.
+5. On first deploy, the app initializes the SQLite database automatically if the DB file does not exist.
+6. Your demo URLs will be:
 
-```bash
-python init_sqlite_db.py
-```
+- Student app: `https://your-service.onrender.com/`
+- Admin app: `https://your-service.onrender.com/staff/admin/login`
+- Student health: `https://your-service.onrender.com/health`
+- Admin health: `https://your-service.onrender.com/staff/health`
 
-6. Start both apps with Gunicorn or Python on that same host.
-7. Check both health endpoints:
+### Local or VPS alternative
 
-- Student: `/health`
-- Admin: `/health`
-
-### Start commands
-
-Student service:
-
-```bash
-gunicorn --bind 0.0.0.0:$PORT wsgi_student:app
-```
-
-Admin service:
-
-```bash
-gunicorn --bind 0.0.0.0:$PORT wsgi_admin:app
-```
+You can still run the student and admin apps separately locally with `student_app.py` and `admin_app.py`.
 
 ## Notes
 
 - The app now uses SQLite instead of MySQL.
 - SQLite is fine for a personal prototype, demo, or portfolio project.
 - SQLite is not ideal for heavy concurrent multi-user production traffic.
-- SQLite is also not a great fit for split multi-service cloud deployments where each service has separate filesystem storage.
+- Render persistent disks are attached to one service only, so the demo deployment uses one combined service.
 - The admin app still uses `.env` credentials for admin login.
 - The student app requires `WALLET_PIN` in production.
 
