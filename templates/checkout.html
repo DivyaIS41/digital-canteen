@@ -36,6 +36,9 @@
                                         <small class="text-danger d-block mt-1">
                                             <i class="fas fa-times-circle"></i> Insufficient Funds
                                         </small>
+                                        <a href="{{ url_for('wallet') }}" class="btn btn-sm btn-outline-primary mt-2">
+                                            <i class="fas fa-plus-circle me-1"></i> Recharge Wallet
+                                        </a>
                                     {% else %}
                                         <small class="text-success d-block mt-1">
                                             <i class="fas fa-check-circle"></i> Balance Available

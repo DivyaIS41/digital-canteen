@@ -1,17 +1,21 @@
 import os
-import sqlite3
 from datetime import date, datetime
+from decimal import Decimal
 from functools import wraps
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 
 from config import apply_flask_config, env_flag, env_int, is_production
-from db_config import fetch_all, fetch_one, get_db_connection, prepare_query
+from db_config import execute_query, fetch_all, fetch_one, get_db_connection, validate_db_config
 
 # --- Configuration ---
 app = Flask(__name__)
 apply_flask_config(app)
 WALLET_PIN = os.getenv('WALLET_PIN', '')
+
+db_ok, db_message = validate_db_config()
+if not db_ok:
+    raise RuntimeError(db_message)
 
 if is_production() and not WALLET_PIN:
     raise RuntimeError("WALLET_PIN is required in production.")
@@ -65,11 +69,11 @@ def get_cart_data(student_id):
             live_item = live_items_map[item_id]
             
             cart_item['item_name'] = live_item['item_name']
-            cart_item['price'] = live_item['price']
-            cart_item['is_special'] = live_item['is_special']
-            cart_item['discounted_price'] = live_item['discounted_price']
+            cart_item['price'] = float(live_item['price'])
+            cart_item['is_special'] = int(live_item['is_special'])
+            cart_item['discounted_price'] = float(live_item['discounted_price'])
 
-            final_price = live_item['discounted_price']
+            final_price = float(live_item['discounted_price'])
             cart_item['line_total'] = final_price * cart_item['quantity']
             order_total += cart_item['line_total']
             updated_cart.append(cart_item)
@@ -80,10 +84,29 @@ def get_cart_data(student_id):
     session.modified = True
     return updated_cart, order_total
 
+
+def get_student_balance(student_id):
+    student = fetch_one(
+        "SELECT balance FROM student WHERE student_id = %s",
+        (student_id,),
+    )
+    if not student:
+        return 0.0
+    return float(student['balance'])
+
+
+def normalize_money(value):
+    if isinstance(value, Decimal):
+        return float(value)
+    return float(value)
+
 # --- Context Processor ---
 @app.context_processor
 def inject_now():
-    return {'now': datetime.now()}
+    wallet_balance = None
+    if session.get('student_id'):
+        wallet_balance = get_student_balance(session['student_id'])
+    return {'now': datetime.now(), 'wallet_balance': wallet_balance}
 
 # --- Decorators ---
 
@@ -173,6 +196,55 @@ def daily_special():
     return redirect(url_for('index') + '#daily-specials')
 
 
+@app.route('/wallet', methods=['GET', 'POST'])
+@student_required
+def wallet():
+    student_id = session['student_id']
+    balance = get_student_balance(student_id)
+
+    if request.method == 'POST':
+        try:
+            recharge_amount = float(request.form.get('amount', '0'))
+        except ValueError:
+            flash("Enter a valid recharge amount.", 'danger')
+            return redirect(url_for('wallet'))
+
+        recharge_method = request.form.get('recharge_method', 'Manual')
+
+        if recharge_amount <= 0:
+            flash("Recharge amount must be greater than zero.", 'danger')
+            return redirect(url_for('wallet'))
+
+        if recharge_amount > 5000:
+            flash("For this demo, recharge is capped at Rs. 5000 per transaction.", 'warning')
+            return redirect(url_for('wallet'))
+
+        updated_balance = balance + recharge_amount
+        recharge_ok = fetch_one(
+            "SELECT student_id FROM student WHERE student_id = %s",
+            (student_id,),
+        )
+        if not recharge_ok:
+            flash("Student record not found.", 'danger')
+            return redirect(url_for('index'))
+
+        update_ok = execute_query(
+            "UPDATE student SET balance = %s WHERE student_id = %s",
+            (updated_balance, student_id),
+        )
+        if not update_ok:
+            flash("Wallet recharge failed. Please try again.", 'danger')
+            return redirect(url_for('wallet'))
+
+        flash(
+            f"Wallet recharged with Rs. {recharge_amount:.2f} using {recharge_method}. New balance: Rs. {updated_balance:.2f}.",
+            'success'
+        )
+        return redirect(url_for('wallet'))
+
+    return render_template('wallet.html', balance=balance)
+
+
 @app.route('/add_to_cart/<int:item_id>', methods=['POST'])
 @student_required
 def add_to_cart(item_id):
@@ -215,11 +287,11 @@ def add_to_cart(item_id):
         new_cart_item = {
             'item_id': item_details['item_id'],
             'item_name': item_details['item_name'],
-            'price': item_details['price'],
-            'is_special': item_details['is_special'],
-            'discounted_price': item_details['discounted_price'],
+            'price': normalize_money(item_details['price']),
+            'is_special': int(item_details['is_special']),
+            'discounted_price': normalize_money(item_details['discounted_price']),
             'quantity': quantity,
-            'line_total': item_details['discounted_price'] * quantity 
+            'line_total': normalize_money(item_details['discounted_price']) * quantity 
         }
         cart.append(new_cart_item)
         
@@ -297,12 +369,12 @@ def checkout():
     # Fetch wallet balance for the GET request or POST check
     conn = get_db_connection()
     if not conn: return redirect(url_for('cart'))
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     
     # Note: Assuming column name is 'balance' based on user input. 
     # If DB uses 'wallet_balance', change this query accordingly.
     cursor.execute(
-        prepare_query("SELECT balance FROM student WHERE student_id = %s"),
+        "SELECT balance FROM student WHERE student_id = %s",
         (session['student_id'],),
     )
     res = cursor.fetchone()
@@ -335,7 +407,7 @@ def checkout():
                 # Deduct Balance
                 new_balance = balance - order_total
                 cursor.execute(
-                    prepare_query("UPDATE student SET balance = %s WHERE student_id = %s"),
+                    "UPDATE student SET balance = %s WHERE student_id = %s",
                     (new_balance, student_id),
                 )
                 # ----------------------------------
@@ -346,7 +418,7 @@ def checkout():
             VALUES (%s, %s, %s, %s, %s)
             """
             order_params = (student_id, date.today(), datetime.now().strftime('%H:%M:%S'), order_total, 'Pending')
-            cursor.execute(prepare_query(order_info_query), order_params)
+            cursor.execute(order_info_query, order_params)
             new_order_id = cursor.lastrowid
 
             # Insert Payment
@@ -356,7 +428,7 @@ def checkout():
             VALUES (%s, %s, %s, %s, %s)
             """
             payment_params = (new_order_id, payment_mode, order_total, payment_status, date.today())
-            cursor.execute(prepare_query(payment_query), payment_params)
+            cursor.execute(payment_query, payment_params)
             
             # Insert Items
             order_item_query = """
@@ -365,7 +437,7 @@ def checkout():
             """
             for item in cart:
                 item_params = (new_order_id, item['item_id'], item['quantity'], item['line_total'])
-                cursor.execute(prepare_query(order_item_query), item_params)
+                cursor.execute(order_item_query, item_params)
 
             conn.commit()
             session.pop('cart', None)
@@ -373,7 +445,7 @@ def checkout():
             flash("Order placed successfully!", 'success')
             return redirect(url_for('order_success', order_id=new_order_id))
 
-        except sqlite3.Error as err:
+        except Exception as err:
             print(f"Checkout Error: {err}")
             conn.rollback()
             flash(f"An error occurred during checkout: {err}", 'danger')

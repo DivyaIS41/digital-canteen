@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Wallet{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg border-0 mb-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+                    <div>
+                        <h1 class="text-primary fw-bold mb-1"><i class="fas fa-wallet me-2"></i>Student Wallet</h1>
+                        <p class="text-muted mb-0">Recharge the balance manually for demo use. No real payment gateway is involved.</p>
+                    </div>
+                    <div class="text-end">
+                        <div class="text-muted small">Current Balance</div>
+                        <div class="display-6 fw-bold text-success">Rs. {{ "%.2f"|format(balance) }}</div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="border rounded-4 p-4 bg-light h-100">
+                            <h4 class="fw-bold mb-3">Quick Recharge</h4>
+                            <form method="POST">
+                                <div class="mb-3">
+                                    <label for="amount" class="form-label fw-semibold">Amount</label>
+                                    <input type="number" class="form-control form-control-lg" id="amount" name="amount" min="1" max="5000" step="0.01" placeholder="Enter amount" required>
+                                    <div class="form-text">Demo limit: Rs. 5000 per recharge.</div>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="recharge_method" class="form-label fw-semibold">Recharge Mode</label>
+                                    <select class="form-select" id="recharge_method" name="recharge_method">
+                                        <option value="Cash at Counter">Cash at Counter</option>
+                                        <option value="UPI Verified Manually">UPI Verified Manually</option>
+                                        <option value="Demo Credit">Demo Credit</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-plus-circle me-2"></i>Add Balance
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="border rounded-4 p-4 h-100">
+                            <h4 class="fw-bold mb-3">How It Works</h4>
+                            <p class="text-muted mb-3">This prototype simulates a recharge without any external payment integration.</p>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item px-0">The entered amount is added directly to the student's stored wallet balance.</li>
+                                <li class="list-group-item px-0">You can use it immediately during checkout with the wallet payment option.</li>
+                                <li class="list-group-item px-0">This is ideal for demos, internal testing, and portfolio presentation.</li>
+                            </ul>
+                            <div class="d-grid gap-2 mt-4">
+                                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-utensils me-2"></i>Back to Menu
+                                </a>
+                                <a href="{{ url_for('checkout') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-credit-card me-2"></i>Go to Checkout
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -37,5 +37,5 @@ INSERT INTO student (student_id, name, email, phone, department, year, balance) 
 ('4SF23IS041', 'Divya K', 'divya.prototype@sahyadri.edu.in', '9876561022', 'IS', 3, 250.00);
 
 INSERT INTO daily_special (item_id, date, discount_percentage) VALUES
-(10, DATE('now', 'localtime'), 50.00),
-(27, DATE('now', 'localtime'), 25.00);
+(10, CURDATE(), 50.00),
+(27, CURDATE(), 25.00);

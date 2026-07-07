@@ -4,10 +4,14 @@ from functools import wraps
 import os
 
 from config import apply_flask_config, env_flag, env_int, is_production, validate_env
-from db_config import fetch_all, fetch_one, execute_query
+from db_config import fetch_all, fetch_one, execute_query, validate_db_config
 
 app = Flask(__name__)
 apply_flask_config(app)
+
+db_ok, db_message = validate_db_config()
+if not db_ok:
+    raise RuntimeError(db_message)
 
 # Admin Credentials from .env (no sensitive defaults)
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', '')

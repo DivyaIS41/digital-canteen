@@ -46,6 +46,14 @@
                 </ul>
                 <ul class="navbar-nav">
                     {% if session.get('student_id') %}
+                        <li class="nav-item me-2">
+                            <a class="btn btn-sm btn-outline-light" href="{{ url_for('wallet') }}">
+                                <i class="fas fa-wallet"></i> Wallet
+                                {% if wallet_balance is not none %}
+                                    <span class="badge bg-warning text-dark ms-1">Rs. {{ "%.0f"|format(wallet_balance) }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a class="btn btn-sm btn-outline-light me-2" href="{{ url_for('orders') }}"><i class="fas fa-history"></i> My Orders</a>
                         </li>
@@ -60,6 +68,7 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                 <li><a class="dropdown-item" href="{{ url_for('orders') }}"><i class="fas fa-list-alt me-2"></i> View Orders</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('wallet') }}"><i class="fas fa-wallet me-2"></i> Wallet & Recharge</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
                             </ul>

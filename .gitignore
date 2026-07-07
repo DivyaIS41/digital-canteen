@@ -45,6 +45,7 @@ instance/
 *.db
 *.sqlite
 *.sqlite3
+*.pem
 
 # OS
 .DS_Store
