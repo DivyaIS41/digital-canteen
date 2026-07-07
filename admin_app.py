@@ -98,17 +98,26 @@ def admin_dashboard():
     # 1. Fetch Menu Items
     all_items = get_menu_items_for_dashboard()
     
-    # 2. Fetch Pending Orders
-    pending_orders = fetch_all("""
-        SELECT oi.order_id, oi.order_date, oi.order_time, oi.total_amount, oi.status, s.name as student_name
+    # 2. Fetch Active Orders
+    active_orders = fetch_all("""
+        SELECT
+            oi.order_id,
+            oi.order_date,
+            oi.order_time,
+            oi.total_amount,
+            oi.status,
+            p.payment_mode,
+            p.payment_status,
+            s.name as student_name
         FROM order_info oi
         JOIN student s ON oi.student_id = s.student_id
-        WHERE oi.status = 'Pending'
+        LEFT JOIN payment p ON oi.order_id = p.order_id
+        WHERE oi.status IN ('Awaiting Payment Confirmation', 'Pending')
         ORDER BY oi.order_date ASC, oi.order_time ASC
     """)
     
     # 3. Fetch Items for each Order
-    for order in pending_orders:
+    for order in active_orders:
         order['items'] = fetch_all("""
             SELECT i.item_name, oit.quantity
             FROM order_item oit
@@ -116,7 +125,7 @@ def admin_dashboard():
             WHERE oit.order_id = %s
         """, (order['order_id'],))
         
-    return render_template('admin_dashboard.html', menu_items=all_items, orders=pending_orders)
+    return render_template('admin_dashboard.html', menu_items=all_items, orders=active_orders)
 
 
 @app.route('/health')
@@ -309,6 +318,32 @@ def update_availability(item_id):
 @admin_required
 def update_order_status(order_id):
     new_status = request.form.get('status')
+    order = fetch_one("""
+        SELECT oi.order_id, oi.status, p.payment_status
+        FROM order_info oi
+        LEFT JOIN payment p ON oi.order_id = p.order_id
+        WHERE oi.order_id = %s
+    """, (order_id,))
+    if not order:
+        flash("Order not found.", 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    if new_status == 'Pending':
+        execute_query(
+            "UPDATE payment SET payment_status = %s WHERE order_id = %s",
+            ('Completed', order_id),
+        )
+    elif new_status == 'Canceled':
+        execute_query(
+            "UPDATE payment SET payment_status = %s WHERE order_id = %s",
+            ('Rejected', order_id),
+        )
+    elif new_status == 'Completed':
+        execute_query(
+            "UPDATE payment SET payment_status = %s WHERE order_id = %s AND payment_status != %s",
+            ('Completed', order_id, 'Completed'),
+        )
+
     execute_query("UPDATE order_info SET status = %s WHERE order_id = %s", (new_status, order_id))
     flash(f"Order #{order_id} marked as {new_status}.", 'success')
     return redirect(url_for('admin_dashboard'))

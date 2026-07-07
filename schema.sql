@@ -35,6 +35,7 @@ CREATE TABLE daily_special (
 CREATE TABLE student (
   student_id VARCHAR(20) PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
+  login_password VARCHAR(100) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
   phone VARCHAR(20),
   department VARCHAR(50),

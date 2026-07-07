@@ -125,12 +125,13 @@ def student_required(f):
 def login():
     if request.method == 'POST':
         student_id = request.form['student_id'].strip().upper()
+        login_password = request.form.get('login_password', '')
         student_query = """
         SELECT student_id, name 
         FROM student 
-        WHERE student_id = %s AND department = %s AND year IN (%s, %s)
+        WHERE student_id = %s AND login_password = %s AND department = %s AND year IN (%s, %s)
         """
-        student = fetch_one(student_query, (student_id, 'IS', 2, 3))
+        student = fetch_one(student_query, (student_id, login_password, 'IS', 2, 3))
 
         if student:
             session.clear()
@@ -140,7 +141,7 @@ def login():
             flash(f"Welcome, {student['name']}! You are logged in.", 'success')
             return redirect(url_for('index'))
         else:
-            flash("Invalid Student ID, or you are not an authorized IS student (Year 2 or 3).", 'danger')
+            flash("Invalid Student ID or password, or you are not an authorized IS student (Year 2 or 3).", 'danger')
 
     return render_template('login.html')
 
@@ -389,6 +390,8 @@ def checkout():
         try:
             payment_mode = request.form['payment_mode']
             student_id = session['student_id']
+            payment_status = 'Pending Confirmation'
+            order_status = 'Awaiting Payment Confirmation'
             
             # WALLET LOGIC
             if payment_mode == 'Wallet':
@@ -410,19 +413,23 @@ def checkout():
                     "UPDATE student SET balance = %s WHERE student_id = %s",
                     (new_balance, student_id),
                 )
+                payment_status = 'Completed'
+                order_status = 'Pending'
                 # ----------------------------------
+            elif payment_mode in ['UPI', 'Card', 'Cash']:
+                payment_status = 'Pending Confirmation'
+                order_status = 'Awaiting Payment Confirmation'
 
             # Insert Order
             order_info_query = """
             INSERT INTO order_info (student_id, order_date, order_time, total_amount, status)
             VALUES (%s, %s, %s, %s, %s)
             """
-            order_params = (student_id, date.today(), datetime.now().strftime('%H:%M:%S'), order_total, 'Pending')
+            order_params = (student_id, date.today(), datetime.now().strftime('%H:%M:%S'), order_total, order_status)
             cursor.execute(order_info_query, order_params)
             new_order_id = cursor.lastrowid
 
             # Insert Payment
-            payment_status = 'Completed' if payment_mode in ['UPI', 'Card', 'Wallet'] else 'Pending'
             payment_query = """
             INSERT INTO payment (order_id, payment_mode, amount_paid, payment_status, transaction_date)
             VALUES (%s, %s, %s, %s, %s)
@@ -460,7 +467,7 @@ def checkout():
 @student_required
 def order_success(order_id):
     order_query = """
-    SELECT oi.order_id, oi.total_amount, oi.status, p.payment_mode, s.name as student_name
+    SELECT oi.order_id, oi.total_amount, oi.status, p.payment_mode, p.payment_status, s.name as student_name
     FROM order_info oi
     JOIN payment p ON oi.order_id = p.order_id
     JOIN student s ON oi.student_id = s.student_id
@@ -488,7 +495,7 @@ def order_success(order_id):
 def orders():
     student_id = session['student_id']
     orders_query = """
-    SELECT oi.order_id, oi.order_date, oi.order_time, oi.total_amount, oi.status, p.payment_mode
+    SELECT oi.order_id, oi.order_date, oi.order_time, oi.total_amount, oi.status, p.payment_mode, p.payment_status
     FROM order_info oi
     LEFT JOIN payment p ON oi.order_id = p.order_id
     WHERE oi.student_id = %s

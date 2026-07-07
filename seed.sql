@@ -32,9 +32,9 @@ INSERT INTO item (item_name, price, category, availability_status) VALUES
 ('Fruit Salad', 60.00, 'Dessert', 1),
 ('Rasgulla (1 pc)', 35.00, 'Dessert', 1);
 
-INSERT INTO student (student_id, name, email, phone, department, year, balance) VALUES
-('4SF24IS402', 'Demo Student', 'demo.student@sahyadri.edu.in', '9876561066', 'IS', 2, 500.00),
-('4SF23IS041', 'Divya K', 'divya.prototype@sahyadri.edu.in', '9876561022', 'IS', 3, 250.00);
+INSERT INTO student (student_id, name, login_password, email, phone, department, year, balance) VALUES
+('4SF24IS402', 'Demo Student', 'student123', 'demo.student@sahyadri.edu.in', '9876561066', 'IS', 2, 500.00),
+('4SF23IS041', 'Divya K', 'student123', 'divya.prototype@sahyadri.edu.in', '9876561022', 'IS', 3, 250.00);
 
 INSERT INTO daily_special (item_id, date, discount_percentage) VALUES
 (10, CURDATE(), 50.00),

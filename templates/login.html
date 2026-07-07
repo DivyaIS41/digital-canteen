@@ -7,11 +7,15 @@
     <div class="col-md-6 col-lg-4">
         <div class="card shadow-lg p-4">
             <h2 class="card-title text-center text-primary mb-4">Student Login</h2>
-            <p class="text-muted text-center">Enter your Student ID to access the ordering system.</p>
+            <p class="text-muted text-center">Enter your Student ID and password to access the ordering system.</p>
             <form method="POST">
                 <div class="mb-3">
                     <label for="student_id" class="form-label fw-bold">Student ID</label>
                     <input type="text" class="form-control" id="student_id" name="student_id" required>
+                </div>
+                <div class="mb-3">
+                    <label for="login_password" class="form-label fw-bold">Password</label>
+                    <input type="password" class="form-control" id="login_password" name="login_password" required>
                 </div>
                 <button type="submit" class="btn btn-primary w-100">Login</button>
             </form>

@@ -6,13 +6,10 @@
 <div class="row justify-content-center mt-5">
     <div class="col-md-8 col-lg-6">
         <div class="card shadow-lg p-5 border-success border-5">
-            
             <div class="text-center mb-4">
                 <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
                 <h1 class="text-3xl font-extrabold text-dark mt-3">Order Confirmed!</h1>
-                
-                <p class="text-lg text-muted mt-2">Thank you, {{ session.get('student_name', 'Student') }}! Your order details are below.</p>
-                
+                <p class="text-lg text-muted mt-2">Thank you, {{ session.get('student_name', 'Student') }}. Your order has been placed.</p>
                 <h2 class="text-2xl text-primary mt-4 font-semibold">Order ID: <span class="badge bg-success fs-5 p-2">#{{ order.order_id }}</span></h2>
                 <p class="text-sm text-gray-400 mt-1">Please keep this ID handy for pickup.</p>
             </div>
@@ -25,7 +22,7 @@
                     {% for item in items %}
                     <li class="list-group-item d-flex justify-content-between">
                         <span class="text-muted">{{ item.quantity }} x {{ item.item_name }}</span>
-                        <span class="fw-bold">₹{{ "%.2f"|format(item.subtotal) }}</span>
+                        <span class="fw-bold">Rs. {{ "%.2f"|format(item.subtotal) }}</span>
                     </li>
                     {% endfor %}
                 </ul>
@@ -33,25 +30,33 @@
             
             <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded mb-4">
                 <h4 class="mb-0 fw-bold text-primary">Total Amount:</h4>
-                <h4 class="mb-0 fw-bold text-success">₹{{ "%.2f"|format(order.total_amount) }}</h4>
+                <h4 class="mb-0 fw-bold text-success">Rs. {{ "%.2f"|format(order.total_amount) }}</h4>
             </div>
 
             <div class="row mb-4 text-center">
-                <div class="col-6">
+                <div class="col-4">
                     <p class="mb-0 text-muted small">Payment Mode:</p>
                     <p class="fw-bold text-dark">{{ order.payment_mode }}</p>
                 </div>
-                <div class="col-6">
-                    <p class="mb-0 text-muted small">Status:</p>
+                <div class="col-4">
+                    <p class="mb-0 text-muted small">Payment Status:</p>
+                    <p class="fw-bold text-dark">{{ order.payment_status }}</p>
+                </div>
+                <div class="col-4">
+                    <p class="mb-0 text-muted small">Order Status:</p>
                     <p class="fw-bold text-info">{{ order.status }}</p>
                 </div>
             </div>
 
-            <!-- New: Button to go back to Home Page -->
+            {% if order.status == 'Awaiting Payment Confirmation' %}
+            <div class="alert alert-warning">
+                Your order is placed and is waiting for payment confirmation from the admin side.
+            </div>
+            {% endif %}
+
             <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg w-100 mt-2 shadow-sm">
                 <i class="fas fa-home me-2"></i> Back to Home Page
             </a>
-            
         </div>
     </div>
 </div>
